@@ -126,6 +126,10 @@ public:
     bool intersect(ray& r, isect& i ) const;
     bool intersectLocal(ray& r, isect& i ) const;
 
+    double getDeterminant(double ax, double ay, double az,
+                        double bx, double by, double bz,
+                        double cx, double cy, double cz) const;    // added by lihang liu
+
     bool hasBoundingBoxCapability() const { return true; }
       
     BoundingBox ComputeLocalBoundingBox()
