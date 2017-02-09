@@ -1,4 +1,5 @@
 #include <cmath>
+#include <time.h>
 
 #include "scene.h"
 #include "light.h"
@@ -50,24 +51,49 @@ Scene::~Scene() {
     for( g = objects.begin(); g != objects.end(); ++g ) delete (*g);
     for( l = lights.begin(); l != lights.end(); ++l ) delete (*l);
     for( t = textureCache.begin(); t != textureCache.end(); t++ ) delete (*t).second;
+    if (kdtree)
+    	delete kdtree;
+}
+
+void Scene::buildKdTree() {
+	clock_t t = clock();
+
+	if (kdtree) 
+		delete kdtree;
+	kdtree = new KdTree<Geometry>(objects, 5);
+
+	t = clock() - t;
+	printf ("build tree: %f\n",t,((float)t)/CLOCKS_PER_SEC);
 }
 
 // Get any intersection with an object.  Return information about the 
 // intersection through the reference parameter.
 bool Scene::intersect(ray& r, isect& i) const {
+	clock_t t = clock();
+
+	// test kdtree
+	bool usingKdTree = true;
 	double tmin = 0.0;
 	double tmax = 0.0;
 	bool have_one = false;
-	typedef vector<Geometry*>::const_iterator iter;
-	for(iter j = objects.begin(); j != objects.end(); ++j) {
-		isect cur;
-		if( (*j)->intersect(r, cur) ) {
-			if(!have_one || (cur.t < i.t)) {
-				i = cur;
-				have_one = true;
+	if (usingKdTree) {
+		have_one = kdtree->intersect(r,i);
+	} else {
+		typedef vector<Geometry*>::const_iterator iter;
+		for(iter j = objects.begin(); j != objects.end(); ++j) {
+			isect cur;
+			if( (*j)->intersect(r, cur) ) {
+				if(!have_one || (cur.t < i.t)) {
+					i = cur;
+					have_one = true;
+				}
 			}
 		}
 	}
+
+	t = clock() - t;
+	// printf ("intersect: %f",t,((float)t)/CLOCKS_PER_SEC);
+	
 	if(!have_one) i.setT(1000.0);
 	// if debugging,
 	if (TraceUI::m_debug) intersectCache.push_back(std::make_pair(new ray(r), new isect(i)));
@@ -80,6 +106,7 @@ TextureMap* Scene::getTexture(string name) {
 		textureCache[name] = new TextureMap(name);
 		return textureCache[name];
 	} else return (*itr).second;
-}
+}   
+
 
 

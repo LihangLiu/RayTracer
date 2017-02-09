@@ -193,6 +193,9 @@ bool RayTracer::loadScene( char* fn ) {
 
 	if( !sceneLoaded() ) return false;
 
+	// build kdtree
+	scene->buildKdTree();
+
 	return true;
 }
 
@@ -209,5 +212,6 @@ void RayTracer::traceSetup(int w, int h)
 	memset(buffer, 0, w*h*3);
 	m_bBufferReady = true;
 }
+
 
 

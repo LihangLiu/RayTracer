@@ -20,6 +20,7 @@
 #include "material.h"
 #include "camera.h"
 #include "bbox.h"
+#include "KdTree.h"
 
 #include "../vecmath/vec.h"
 #include "../vecmath/mat.h"
@@ -284,7 +285,7 @@ public:
   // Each object in the scene, provided that it has hasBoundingBoxCapability(),
   // must fall within this bounding box.  Objects that don't have hasBoundingBoxCapability()
   // are exempt from this requirement.
-  BoundingBox sceneBounds;
+  BoundingBox sceneBounds;  
   
   KdTree<Geometry>* kdtree;
 
