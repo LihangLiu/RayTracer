@@ -89,6 +89,8 @@ void CubeMapChooser::hide() {
 
 void CubeMapChooser::cb_cancel(Fl_Widget* o, void* v) {
 	o->parent()->hide();
+	CubeMapChooser* ch = (CubeMapChooser*)(o->parent()->user_data());
+	ch->hide();
 }
 
 void CubeMapChooser::cb_ok(Fl_Widget* o, void* v) {
@@ -97,8 +99,9 @@ void CubeMapChooser::cb_ok(Fl_Widget* o, void* v) {
 	while (ch->fb[allGreen]->selection_color() == FL_GREEN) allGreen++;
 	if (allGreen == 6) {
 		CubeMap* cm = 0;
-		if (ch->caller->getRayTracer()->haveCubeMap())
+		if (ch->caller->getRayTracer()->haveCubeMap()) {
 			cm = ch->caller->getRayTracer()->getCubeMap();
+		}
 		else {
 			cm = new CubeMap();
 			ch->caller->getRayTracer()->setCubeMap(cm);
@@ -114,8 +117,10 @@ void CubeMapChooser::cb_ok(Fl_Widget* o, void* v) {
 		ch->caller->m_filterSlider->activate();
 		ch->caller->m_cubeMapCheckButton->activate();
 		ch->caller->m_cubeMapCheckButton->value(1);
+
 	}
 	o->parent()->hide();
+	ch->hide();
 }
 
 void CubeMapChooser::cb_xpi(Fl_Widget* o, void* v) {
@@ -224,3 +229,4 @@ void CubeMapChooser::cb_ffb(Fl_Widget* o, int i) {
 	ch->fb[i]->value(0);
 	ch->fb[i]->value(1);
 }
+

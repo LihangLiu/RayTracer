@@ -126,6 +126,10 @@ Vec3d RayTracer::traceRay(ray& r, int depth)
 		// it according to the background color, which in this (simple) case
 		// is just black.
 		I = Vec3d(0.0, 0.0, 0.0);
+		if (haveCubeMap() && traceUI->isUsingCubeMap()) {
+			CubeMap* cubemap = getCubeMap();
+			I = cubemap->getColor(r);
+		}
 	}
 	return I;
 }

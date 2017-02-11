@@ -5,6 +5,8 @@
 #include "light.h"
 #include "../ui/TraceUI.h"
 
+extern TraceUI* traceUI;
+
 using namespace std;
 
 bool Geometry::intersect(ray& r, isect& i) const {
@@ -57,7 +59,6 @@ Scene::~Scene() {
 
 void Scene::buildKdTree() {
 	clock_t t = clock();
-
 	if (kdtree) 
 		delete kdtree;
 	kdtree = new KdTree<Geometry>(objects, 5);
@@ -71,12 +72,10 @@ void Scene::buildKdTree() {
 bool Scene::intersect(ray& r, isect& i) const {
 	clock_t t = clock();
 
-	// test kdtree
-	bool usingKdTree = true;
 	double tmin = 0.0;
 	double tmax = 0.0;
 	bool have_one = false;
-	if (usingKdTree) {
+	if (traceUI->isUsingKdTree()) {
 		have_one = kdtree->intersect(r,i);
 	} else {
 		typedef vector<Geometry*>::const_iterator iter;

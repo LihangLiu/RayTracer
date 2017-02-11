@@ -49,6 +49,7 @@ public:
 	Fl_Check_Button*	m_aaCheckButton;
 	Fl_Check_Button*	m_kdCheckButton;
 	Fl_Check_Button*	m_cubeMapCheckButton;
+	Fl_Check_Button*	m_kdTreeCheckButton;
 	Fl_Check_Button*	m_ssCheckButton;
 	Fl_Check_Button*	m_shCheckButton;
 	Fl_Check_Button*	m_bfCheckButton;
@@ -80,6 +81,7 @@ private:
 
 	static GraphicalUI* whoami(Fl_Menu_* o);
 
+	static void cb_load_cubemap(Fl_Menu_* o, void* v);		// added by lihang liu
 	static void cb_load_scene(Fl_Menu_* o, void* v);
 	static void cb_save_image(Fl_Menu_* o, void* v);
 	static void cb_exit(Fl_Menu_* o, void* v);
@@ -91,6 +93,11 @@ private:
 	static void cb_sizeSlides(Fl_Widget* o, void* v);
 	static void cb_depthSlides(Fl_Widget* o, void* v);
 	static void cb_refreshSlides(Fl_Widget* o, void* v);
+
+	static void cb_filterSlides(Fl_Widget* o, void* v);	// added by lihang liu
+	static void cb_cubeMapCheckButton(Fl_Widget* o, void* v);
+
+	static void cb_kdTreeCheckButton(Fl_Widget* o, void* v);
 
 	static void cb_render(Fl_Widget* o, void* v);
 	static void cb_stop(Fl_Widget* o, void* v);
@@ -105,3 +112,4 @@ private:
 };
 
 #endif
+

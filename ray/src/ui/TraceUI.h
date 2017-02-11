@@ -20,7 +20,7 @@ class TraceUI {
 public:
 	TraceUI() : m_nDepth(0), m_nSize(512), m_displayDebuggingInfo(false),
                     m_shadows(true), m_smoothshade(true), raytracer(0),
-                    m_nFilterWidth(1)
+                    m_nFilterWidth(1), m_usingCubeMap(0), m_usingKdTree(1)
                     {}
 
 	virtual int	run() = 0;
@@ -32,6 +32,8 @@ public:
 	virtual void setRayTracer( RayTracer* r ) { raytracer = r; }
 	void setCubeMap(bool b) { m_gotCubeMap = b; }
 	void useCubeMap(bool b) { m_usingCubeMap = b; }
+	bool isUsingCubeMap() { return m_usingCubeMap; }
+	bool isUsingKdTree() { return m_usingKdTree; }
 
 	// accessors:
 	int	getSize() const { return m_nSize; }
@@ -58,6 +60,8 @@ protected:
 	bool		m_usingCubeMap;  // render with cubemap
 	bool		m_gotCubeMap;  // cubemap defined
 	int m_nFilterWidth;  // width of cubemap filter
+	bool m_usingKdTree;	// if using kd tree
 };
 
 #endif
+

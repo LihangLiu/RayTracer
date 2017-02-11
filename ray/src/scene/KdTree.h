@@ -29,27 +29,40 @@ struct Interface
 	double value;
 };
 
-struct BBoxComparatorX
+struct BBoxComparator
 {
+	int index;
+	BBoxComparator(int i) {
+		index = i;
+	}
     bool operator()( const BoundingBox& lx, const BoundingBox& rx) const {
-        return lx.getMin()[0]<rx.getMin()[0];
+        return lx.getMin()[index]<rx.getMin()[index];
     }
 };
 
-struct BBoxComparatorY
-{
-    bool operator()( const BoundingBox& lx, const BoundingBox& rx) const {
-        return lx.getMin()[1]<rx.getMin()[1];
+template <typename T> 
+struct TComparator 
+{ 
+  	int axis;
+	TComparator(int index) {
+		axis = index;
+	}
+    bool operator()( const T* lx, const T* rx) const {
+    	Vec3d minPoint1 = lx->getBoundingBox().getMin();
+    	Vec3d minPoint2 = rx->getBoundingBox().getMin();
+    	if (minPoint1[axis] == minPoint2[axis]) {
+    		Vec3d maxPoint1 = lx->getBoundingBox().getMax();
+    		Vec3d maxPoint2 = rx->getBoundingBox().getMax();
+    		return maxPoint1[axis] < maxPoint2[axis];
+    	} else
+    		return minPoint1[axis] < minPoint2[axis];
     }
-};
+}; 
 
-struct BBoxComparatorZ
-{
-    bool operator()( const BoundingBox& lx, const BoundingBox& rx) const {
-        return lx.getMin()[2]<rx.getMin()[2];
-    }
-};
 
+// KdTree
+//
+//
 
 template<class T>
 class KdTree {
@@ -57,6 +70,7 @@ class KdTree {
 	typedef std::vector<T*> ObjVec;
 	typedef std::vector<BoundingBox> BBoxVec;
 	typedef typename std::vector<T*>::const_iterator giter;
+	typedef typename std::vector<BoundingBox>::const_iterator biter;
 
 public:
 	KdTree(ObjVec objs, int maxObjNum);
@@ -79,14 +93,19 @@ private:
 	KdTree<T>* rightChild;
   	ObjVec objects;
   	BoundingBox treeBounds;
-  	Interface interface;
 
   	int maxObjNum;
 
   	void add( T* obj );
+  	void splitByMidPoint();
   	Interface getBestInterface();
-  	void split(Interface infa);
+
+  	void splitByAF();
+  	void getMinAF(const ObjVec sorted_objs, double& minAF, int& minI);
 };
+
+
+
 
 
 template<class T>
@@ -99,19 +118,21 @@ KdTree<T>::KdTree(ObjVec objs, int maxObjNum) {
 		add(*j);
 	}
 
-	// cout << "-----\n new tree\n";
+	// cout << "-----\n new trees\n";
 	// print();
 	// getchar();
 
 	// check whether to split
 	if (objs.size()>=maxObjNum) {
-		interface = getBestInterface();
-		split(interface);
+		// method 1 middle point
+		// splitByMidPoint();
+		// method 2 area function
+		splitByAF();
 	}
 }
 
 template<class T>
-bool KdTree<T>::intersect(ray& r, isect& i) const {
+inline bool KdTree<T>::intersect(ray& r, isect& i) const {
 	// printf("in\n");
 	// print();
 	// check the bounding box first
@@ -141,7 +162,7 @@ bool KdTree<T>::intersect(ray& r, isect& i) const {
 }
 
 template<class T>
-bool KdTree<T>::intersectLocal(ray& r, isect& i) const {
+inline bool KdTree<T>::intersectLocal(ray& r, isect& i) const {
 	bool have_one = false;
 	for(giter j = objects.begin(); j != objects.end(); ++j) {
 		isect cur;
@@ -180,8 +201,14 @@ void KdTree<T>::add( T* obj ) {
 }
 
 
+// method 1: interface by middle point
+//
+//
+
 template<class T>
-void KdTree<T>::split(Interface infa) {
+void KdTree<T>::splitByMidPoint() {
+	Interface infa = getBestInterface();
+
 	ObjVec leftObjs;
 	ObjVec rightObjs;
 	int i = infa.index;
@@ -205,46 +232,11 @@ void KdTree<T>::split(Interface infa) {
 	rightChild = new KdTree(rightObjs, maxObjNum);
 }
 
-// ray -r 8 ../scenes/hitchcock.ray output.bmp
-// build tree: 0.006711
-// total time = 5.47897 seconds, rays traced = 262144
-// template<class T>
-// Interface KdTree<T>::getBestInterface() {
-// 	// collect all bounding boxes
-// 	BBoxVec boxVec;
-// 	for(giter j=objects.begin(); j!=objects.end(); ++j) {
-// 		T* obj = (*j);
-// 		boxVec.push_back(obj->getBoundingBox());
-// 	}
-// 	// find maximal axis length
-// 	Vec3d minPoint = treeBounds.getMin();
-// 	Vec3d maxPoint = treeBounds.getMax();
-// 	double absx = maxPoint[0]-minPoint[0];
-// 	double absy = maxPoint[1]-minPoint[1];
-// 	double absz = maxPoint[2]-minPoint[2];
-// 	// sort bounding boxes
-// 	int index = 0;
-// 	if (absx>absy && absx>absz) {
-// 		std::sort(boxVec.begin(), boxVec.end(),BBoxComparatorX());
-// 		index = 0;
-// 	}
-// 	else if (absy>absx && absy>absz) {
-// 		std::sort(boxVec.begin(), boxVec.end(),BBoxComparatorY());
-// 		index = 1;
-// 	}
-// 	else {
-// 		std::sort(boxVec.begin(), boxVec.end(),BBoxComparatorZ());
-// 		index = 2;
-// 	}
-// 	// get the middle box
-// 	BoundingBox midBox = boxVec.at(boxVec.size()/2);
-// 	Interface res = {index, midBox.getMin()[index]};
-// 	return res;
-// }
 
 // ray -r 8 ../scenes/hitchcock.ray output.bmp
 // build tree: 0.005939
 // total time = 4.70256 seconds, rays traced = 262144
+// a bug
 template<class T>
 Interface KdTree<T>::getBestInterface() {
 	// collect all bounding boxes
@@ -274,7 +266,79 @@ Interface KdTree<T>::getBestInterface() {
 	return res;
 }
 
+// method 2: area function
+//
+//
 
+template<class T>
+void KdTree<T>::splitByAF() {
+	int minI = 0;
+	int minAxis = 0;
+	double minAF = 1.0e308;
+	for (int axis=0;axis<3;++axis) {
+		double cAF;
+		int cI;
+		std::sort(objects.begin(), objects.end(),TComparator<T>(axis));
+		getMinAF(objects, cAF, cI);
+		if (cAF < minAF) {
+			minAF = cAF;
+			minI = cI;
+			minAxis = axis;
+		}
+	}
+	// pass objects to leftObj and rightObj
+	ObjVec leftObjs;
+	ObjVec rightObjs;
+	std::sort(objects.begin(), objects.end(),TComparator<T>(minAxis));
+	for (int i=0;i<objects.size();++i) {
+		T* obj = objects.at(i);
+		if (i<=minI)
+			leftObjs.push_back(obj);
+		else
+			rightObjs.push_back(obj);
+	}
+	// construct child tree
+	// cout << "split by " <<minAxis<<" of "<<minI<<"\n";
+	// cout << "	left " ;
+	// printObjects(leftObjs, minAxis);
+	// cout << "	right " ;
+	// printObjects(rightObjs, minAxis);
+	leftChild = new KdTree(leftObjs, maxObjNum);
+	rightChild = new KdTree(rightObjs, maxObjNum);
+}
+
+template<class T>
+void KdTree<T>::getMinAF(const ObjVec sorted_objs, double& minAF, int& minI) {
+	// calculate sA & sB
+	int n = sorted_objs.size();
+	double* sA_list = new double[n];
+	double* sB_list = new double[n];
+	BoundingBox leftBounds, rightBounds;		// start merging from left and right, respectively
+	for(int i=0;i<n;++i) {
+		BoundingBox box1 = sorted_objs.at(i)->getBoundingBox();
+		leftBounds.merge(box1);
+		sA_list[i] = leftBounds.area();
+
+		BoundingBox box2 = sorted_objs.at(n-1-i)->getBoundingBox();
+		rightBounds.merge(box2);
+		sB_list[i] = rightBounds.area();
+	} 
+
+	// get minimal f(i) = sA*nA+sB*nB
+	minAF = 1.0e308;
+	minI = 0;
+	for (int i=0;i<n-1;++i) {
+		double sA = sA_list[i];
+		int nA = i+1;
+		double sB = sB_list[n-2-i];
+		int nB = n-i-1;
+		double f = sA*nA+sB*nB;
+		if (f<minAF) {
+			minAF = f;
+			minI = i;
+		}
+	}
+}
 
 
 

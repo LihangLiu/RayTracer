@@ -285,9 +285,9 @@ public:
   // Each object in the scene, provided that it has hasBoundingBoxCapability(),
   // must fall within this bounding box.  Objects that don't have hasBoundingBoxCapability()
   // are exempt from this requirement.
-  BoundingBox sceneBounds;  
+  BoundingBox sceneBounds;
   
-  KdTree<Geometry>* kdtree;
+  KdTree<Geometry>* kdtree = NULL;
 
  public:
   // This is used for debugging purposes only.
@@ -295,3 +295,4 @@ public:
 };
 
 #endif // __SCENE_H__
+

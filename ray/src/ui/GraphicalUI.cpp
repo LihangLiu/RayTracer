@@ -37,6 +37,13 @@ GraphicalUI* GraphicalUI::whoami(Fl_Menu_* o)	// from menu item back to UI itsel
 }
 
 //--------------------------------- Callback Functions --------------------------------------------
+
+void GraphicalUI::cb_load_cubemap(Fl_Menu_* o, void* v) 		// added by lihang liu
+{
+	pUI = whoami(o);
+	pUI->m_cubeMapChooser->show();
+}
+
 void GraphicalUI::cb_load_scene(Fl_Menu_* o, void* v) 
 {
 	pUI = whoami(o);
@@ -45,16 +52,13 @@ void GraphicalUI::cb_load_scene(Fl_Menu_* o, void* v)
 	char* newfile = fl_file_chooser("Open Scene?", "*.ray", NULL );
 
 	if (newfile != NULL) {
-		char buf[256];
-
-		if (pUI->raytracer->loadScene(newfile)) {
+		char buf[256];		
+		if (pUI->raytracer->loadScene(newfile)) {			
 			print(buf, "Ray <%s>", newfile);
 			stopTracing();	// terminate the previous rendering
-		} else print(buf, "Ray <Not Loaded>");
-
+		} else print(buf, "Ray <Not Loaded>");		
 		pUI->m_mainWindow->label(buf);
-		pUI->m_debuggingWindow->m_debuggingView->setDirty();
-
+		pUI->m_debuggingWindow->m_debuggingView->setDirty();		
 		if( lastFile != 0 && strcmp(newfile, lastFile) != 0 )
 			pUI->m_debuggingWindow->m_debuggingView->resetCamera();
 
@@ -126,6 +130,21 @@ void GraphicalUI::cb_refreshSlides(Fl_Widget* o, void* v)
 	((GraphicalUI*)(o->user_data()))->refreshInterval=clock_t(((Fl_Slider *)o)->value()) ;
 }
 
+void GraphicalUI::cb_filterSlides(Fl_Widget* o, void* v)
+{
+	((GraphicalUI*)(o->user_data()))->m_nFilterWidth=int( ((Fl_Slider *)o)->value() ) ;
+}
+
+void GraphicalUI::cb_cubeMapCheckButton(Fl_Widget* o, void* v)
+{
+	((GraphicalUI*)(o->user_data()))->m_usingCubeMap=int( ((Fl_Check_Button *)o)->value() ) ;
+}
+
+void GraphicalUI::cb_kdTreeCheckButton(Fl_Widget* o, void* v)
+{
+	((GraphicalUI*)(o->user_data()))->m_usingKdTree=int( ((Fl_Check_Button *)o)->value() ) ;
+}
+
 void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 {
 	pUI=(GraphicalUI*)(o->user_data());
@@ -160,8 +179,8 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 		// Save the window label
                 const char *old_label = pUI->m_traceGlWindow->label();
 
-		clock_t now, prev;
-		now = prev = clock();
+		clock_t now, prev, end, start;
+		now = prev = start = clock();
 		clock_t intervalMS = pUI->refreshInterval * 100;
 		for (int y = 0; y < height; y++)
 		  {
@@ -190,6 +209,8 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 		// Restore the window label
 		pUI->m_traceGlWindow->label(old_label);
 		pUI->m_traceGlWindow->refresh();
+		end = clock();
+		printf("time: %f\n", (double)(end-start)/CLOCKS_PER_SEC);
 	  }
 }
 
@@ -223,6 +244,7 @@ void GraphicalUI::setRayTracer(RayTracer *tracer)
 // menu definition
 Fl_Menu_Item GraphicalUI::menuitems[] = {
 	{ "&File", 0, 0, 0, FL_SUBMENU },
+	{ "&Load CubeMap...",	FL_ALT + 'c', (Fl_Callback *)GraphicalUI::cb_load_cubemap },
 	{ "&Load Scene...",	FL_ALT + 'l', (Fl_Callback *)GraphicalUI::cb_load_scene },
 	{ "&Save Image...", FL_ALT + 's', (Fl_Callback *)GraphicalUI::cb_save_image },
 	{ "&Exit", FL_ALT + 'e', (Fl_Callback *)GraphicalUI::cb_exit },
@@ -297,6 +319,34 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_refreshSlider->align(FL_ALIGN_RIGHT);
 	m_refreshSlider->callback(cb_refreshSlides);
 
+	// install filter slider for cube map
+	m_filterSlider = new Fl_Value_Slider(100, 115, 180, 20, "Filter Width");
+	m_filterSlider->user_data((void*)(this));	// record self to be used by static callback functions
+	m_filterSlider->type(FL_HOR_NICE_SLIDER);
+	m_filterSlider->labelfont(FL_COURIER);
+	m_filterSlider->labelsize(12);
+	m_filterSlider->minimum(1);
+	m_filterSlider->maximum(10);
+	m_filterSlider->step(1);
+	m_filterSlider->value(m_nFilterWidth);
+	m_filterSlider->align(FL_ALIGN_RIGHT);
+	m_filterSlider->callback(cb_filterSlides);
+	m_filterSlider->deactivate();
+
+	// set up cube map checkbox
+	m_cubeMapCheckButton = new Fl_Check_Button(10, 115, 70, 20, "CubeMap");
+	m_cubeMapCheckButton->user_data((void*)(this));
+	m_cubeMapCheckButton->callback(cb_cubeMapCheckButton);
+	m_cubeMapCheckButton->value(m_usingCubeMap);
+	m_cubeMapCheckButton->deactivate();
+
+	// set up KdTree checkbox
+	m_kdTreeCheckButton = new Fl_Check_Button(10, 140, 70, 20, "KdTree");
+	m_kdTreeCheckButton->user_data((void*)(this));
+	m_kdTreeCheckButton->callback(cb_kdTreeCheckButton);
+	m_kdTreeCheckButton->value(m_usingKdTree);
+
+
 	// set up debugging display checkbox
 	m_debuggingDisplayCheckButton = new Fl_Check_Button(10, 429, 140, 20, "Debugging display");
 	m_debuggingDisplayCheckButton->user_data((void*)(this));
@@ -306,6 +356,10 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_mainWindow->callback(cb_exit2);
 	m_mainWindow->when(FL_HIDE);
 	m_mainWindow->end();
+
+	// load cube map view
+	m_cubeMapChooser = new CubeMapChooser();
+	m_cubeMapChooser->setCaller(this);
 
 	// image view
 	m_traceGlWindow = new TraceGLWindow(100, 150, m_nSize, m_nSize, traceWindowLabel);
@@ -317,3 +371,4 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 }
 
 #endif
+
