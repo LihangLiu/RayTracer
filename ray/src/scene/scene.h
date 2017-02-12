@@ -122,6 +122,9 @@ public:
   // intersections performed in the global coordinate space.
   bool intersect(ray& r, isect& i) const;
 
+  virtual bool ifTrimesh() { return false; }  // used by KdTree, added by lihang liu
+  virtual std::vector<Geometry*> getFaces() { return std::vector<Geometry*>(); }
+
   virtual bool hasBoundingBoxCapability() const;
   const BoundingBox& getBoundingBox() const { return bounds; }
   Vec3d getNormal() { return Vec3d(1.0, 0.0, 0.0); }

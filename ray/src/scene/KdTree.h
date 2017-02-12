@@ -17,10 +17,13 @@
 #include "camera.h"
 #include "bbox.h"
 
+// #include "../SceneObjects/trimesh.h"
+
 #include "../vecmath/vec.h"
 #include "../vecmath/mat.h"
 
 using namespace std;
+
 
 
 struct Interface
@@ -102,6 +105,8 @@ private:
 
   	void splitByAF();
   	void getMinAF(const ObjVec sorted_objs, double& minAF, int& minI);
+
+  	void splitIfTrimesh();
 };
 
 
@@ -128,6 +133,10 @@ KdTree<T>::KdTree(ObjVec objs, int maxObjNum) {
 		// splitByMidPoint();
 		// method 2 area function
 		splitByAF();
+	} 
+	// if not split, check if there is any trimesh
+	else {
+		splitIfTrimesh();
 	}
 }
 
@@ -275,6 +284,7 @@ void KdTree<T>::splitByAF() {
 	int minI = 0;
 	int minAxis = 0;
 	double minAF = 1.0e308;
+	// evaluate minI, minAxis and minF over all axises.
 	for (int axis=0;axis<3;++axis) {
 		double cAF;
 		int cI;
@@ -286,7 +296,7 @@ void KdTree<T>::splitByAF() {
 			minAxis = axis;
 		}
 	}
-	// pass objects to leftObj and rightObj
+	// pass objects to leftObj and rightObj by minI and minAxis
 	ObjVec leftObjs;
 	ObjVec rightObjs;
 	std::sort(objects.begin(), objects.end(),TComparator<T>(minAxis));
@@ -341,6 +351,35 @@ void KdTree<T>::getMinAF(const ObjVec sorted_objs, double& minAF, int& minI) {
 }
 
 
+// when maximal number is not reached, 
+//	check if there is a trimesh before stop
+//
+template<class T>
+void KdTree<T>::splitIfTrimesh() {
+	// check if there is a trimesh
+	ObjVec leftObjs;
+	ObjVec rightObjs;
+	T* trimesh = NULL;
+	for (int i=0;i<objects.size();++i) {
+		T* obj = objects.at(i);
+		if (obj->ifTrimesh() && !trimesh) 
+			trimesh = obj;
+		else 
+			leftObjs.push_back(obj);
+	}
+	// split the tree if there is a trimesh
+	if (trimesh) {
+		// construct child tree
+		// cout << "split because of trimesh\n";
+		// cout << "trimesh size: " << trimesh->getFaces().size() <<endl;
+		leftChild = new KdTree(leftObjs, maxObjNum);
+		// rightObjs.push_back(trimesh->getFaces());
+		// rightObjs.insert(rightObjs.end(), trimesh->getFaces().begin(), trimesh->getFaces().end());
+		// // rightObjs.push_back(trimesh->faces.at(0));
+		rightChild = new KdTree(trimesh->getFaces(), maxObjNum);
+	}
+
+}
 
 
 #endif // __KDTREE_H__

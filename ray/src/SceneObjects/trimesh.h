@@ -39,6 +39,13 @@ public:
     bool intersectLocal(ray& r, isect& i) const;
 
     ~Trimesh();
+
+    bool ifTrimesh() { return true; }  // used by KdTree, added by lihang liu
+    std::vector<Geometry*> getFaces() { 
+        std::vector<Geometry*> res;
+        res.insert(res.begin(), faces.begin(),faces.end());
+        return res; 
+    }
     
     // must add vertices, normals, and materials IN ORDER
     void addVertex( const Vec3d & );
@@ -148,3 +155,4 @@ public:
  };
 
 #endif // TRIMESH_H__
+
