@@ -7,6 +7,8 @@
 #include <time.h>
 #include <string.h>
 #include <stdarg.h>
+#include <thread>
+#include <chrono>
 
 #ifndef COMMAND_LINE_ONLY
 
@@ -23,6 +25,8 @@
 #else
 #define print sprintf
 #endif
+
+using namespace std;
 
 bool GraphicalUI::stopTrace = false;
 bool GraphicalUI::doneTrace = true;
@@ -145,6 +149,11 @@ void GraphicalUI::cb_kdTreeCheckButton(Fl_Widget* o, void* v)
 	((GraphicalUI*)(o->user_data()))->m_usingKdTree=int( ((Fl_Check_Button *)o)->value() ) ;
 }
 
+void GraphicalUI::cb_threadNumSlides(Fl_Widget* o, void* v)
+{
+	((GraphicalUI*)(o->user_data()))->m_nThreadNum=int( ((Fl_Slider *)o)->value() ) ;
+}
+
 void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 {
 	pUI=(GraphicalUI*)(o->user_data());
@@ -163,12 +172,10 @@ void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 
 void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 
-	char buffer[256];
-
 	pUI = (GraphicalUI*)(o->user_data());
 	doneTrace = stopTrace = false;
 	if (pUI->raytracer->sceneLoaded())
-	  {
+	{
 		int width = pUI->getSize();
 		int height = (int)(width / pUI->raytracer->aspectRatio() + 0.5);
 		int origPixels = width * height;
@@ -177,41 +184,76 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 		pUI->raytracer->traceSetup(width, height);
 
 		// Save the window label
-                const char *old_label = pUI->m_traceGlWindow->label();
+    	const char *old_label = pUI->m_traceGlWindow->label();
+    	// start timer
+    	chrono::time_point<std::chrono::system_clock> c_start, c_end;
+    	c_start = chrono::system_clock::now();
 
-		clock_t now, prev, end, start;
-		now = prev = start = clock();
-		clock_t intervalMS = pUI->refreshInterval * 100;
-		for (int y = 0; y < height; y++)
-		  {
-		    for (int x = 0; x < width; x++)
-		      {
-			if (stopTrace) break;
-			// check for input and refresh view every so often while tracing
-			now = clock();
-			if ((now - prev)/CLOCKS_PER_SEC * 1000 >= intervalMS)
-			  {
-			    prev = now;
-			    sprintf(buffer, "(%d%%) %s", (int)((double)y / (double)height * 100.0), old_label);
-			    pUI->m_traceGlWindow->label(buffer);
-			    pUI->m_traceGlWindow->refresh();
-			    Fl::check();
-			    if (Fl::damage()) { Fl::flush(); }
-			  }
-			// look for input and refresh window
-			pUI->raytracer->tracePixel(x, y);
-			pUI->m_debuggingWindow->m_debuggingView->setDirty();
-		      }
-		    if (stopTrace) break;
-		  }
+        // start multi thread
+        int numThread = pUI->m_nThreadNum;
+		printf("num thread: %d\n", numThread);
+		thread myThreads[numThread];
+
+		for (int t=0;t<numThread;++t) {
+			myThreads[t] = thread(&GraphicalUI::thread_tracePixel, pUI, numThread, t);
+		}
+		for (int t=0;t<numThread;++t) {
+			myThreads[t].join();
+		}
+		
 		doneTrace = true;
 		stopTrace = false;
+		// end timer
+		c_end = chrono::system_clock::now();
+		chrono::duration<double> t = c_end-c_start;
+		std::cout << "total time = " << t.count() << " seconds, rays traced = " << width*height << std::endl;
+
 		// Restore the window label
 		pUI->m_traceGlWindow->label(old_label);
 		pUI->m_traceGlWindow->refresh();
-		end = clock();
-		printf("time: %f\n", (double)(end-start)/CLOCKS_PER_SEC);
-	  }
+		
+	}
+}
+
+int GraphicalUI::thread_tracePixel(GraphicalUI* pUI, int numThread, int t) {
+	char buffer[256];
+
+	int width = pUI->getSize();
+	int height = (int)(width / pUI->raytracer->aspectRatio() + 0.5);
+
+	// Save the window label
+    const char *old_label = pUI->m_traceGlWindow->label();
+
+	// start timer
+	chrono::time_point<std::chrono::system_clock> start, end;
+	start = chrono::system_clock::now();
+	clock_t intervalMS = pUI->refreshInterval * 0.1;
+	for (int y = 0; y < height; y++)
+	{
+		if (y%numThread != t)
+			continue;
+	    for (int x = 0; x < width; x++)
+	    {
+	    	if (stopTrace) { printf("stop\n"); return 0; }
+			// check for input and refresh view every so often while tracing
+			end = chrono::system_clock::now();
+			chrono::duration<double> interval = end-start;
+			if (interval.count() >= intervalMS && t==0)
+			{
+			    start = end;
+			    sprintf(buffer, "(%d%%) %s", (int)((double)y / (double)height * 100.0), old_label);
+			    pUI->m_traceGlWindow->label(buffer);
+			    pUI->m_traceGlWindow->refresh();
+			    // Fl::check();
+			    // if (Fl::damage()) { Fl::flush(); }
+			}
+			// look for input and refresh window
+			pUI->raytracer->tracePixel(x, y);
+			pUI->m_debuggingWindow->m_debuggingView->setDirty();
+	    }
+	    if (stopTrace) { printf("stop\n"); return 0; }
+	}
+
 }
 
 void GraphicalUI::cb_stop(Fl_Widget* o, void* v)
@@ -345,6 +387,20 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_kdTreeCheckButton->user_data((void*)(this));
 	m_kdTreeCheckButton->callback(cb_kdTreeCheckButton);
 	m_kdTreeCheckButton->value(m_usingKdTree);
+
+	// set up thread number slider
+	// install filter slider for cube map
+	m_threadNumSlider = new Fl_Value_Slider(10, 165, 180, 20, "Thread Number");
+	m_threadNumSlider->user_data((void*)(this));	// record self to be used by static callback functions
+	m_threadNumSlider->type(FL_HOR_NICE_SLIDER);
+	m_threadNumSlider->labelfont(FL_COURIER);
+	m_threadNumSlider->labelsize(12);
+	m_threadNumSlider->minimum(1);
+	m_threadNumSlider->maximum(16);
+	m_threadNumSlider->step(1);
+	m_threadNumSlider->value(m_nThreadNum);
+	m_threadNumSlider->align(FL_ALIGN_RIGHT);
+	m_threadNumSlider->callback(cb_threadNumSlides);
 
 
 	// set up debugging display checkbox

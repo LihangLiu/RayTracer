@@ -11,6 +11,7 @@
 #pragma warning(disable : 4786)
 
 #include <string>
+#include <thread>
 
 using std::string;
 
@@ -20,7 +21,8 @@ class TraceUI {
 public:
 	TraceUI() : m_nDepth(0), m_nSize(512), m_displayDebuggingInfo(false),
                     m_shadows(true), m_smoothshade(true), raytracer(0),
-                    m_nFilterWidth(1), m_usingCubeMap(0), m_usingKdTree(1)
+                    m_nFilterWidth(1), m_usingCubeMap(0), m_usingKdTree(1),
+                    m_nThreadNum(std::thread::hardware_concurrency())
                     {}
 
 	virtual int	run() = 0;
@@ -61,6 +63,7 @@ protected:
 	bool		m_gotCubeMap;  // cubemap defined
 	int m_nFilterWidth;  // width of cubemap filter
 	bool m_usingKdTree;	// if using kd tree
+	int m_nThreadNum;	// thread number
 };
 
 #endif

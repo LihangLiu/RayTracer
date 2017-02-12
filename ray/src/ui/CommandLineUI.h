@@ -26,6 +26,8 @@ public:
 	CommandLineUI( int argc, char* const* argv );
 	int		run();
 
+	int thread_tracePixel(int numThread, int t);
+
 	void		alert( const string& msg );
 
 private:
@@ -37,3 +39,4 @@ private:
 };
 
 #endif
+

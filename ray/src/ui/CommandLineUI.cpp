@@ -1,8 +1,10 @@
 #include <iostream>
 #include <time.h>
 #include <stdarg.h>
+#include <chrono>
 
 #include <assert.h>
+#include <thread>
 
 #include "CommandLineUI.h"
 #include "../fileio/bitmap.h"
@@ -49,6 +51,19 @@ CommandLineUI::CommandLineUI( int argc, char* const* argv )
 	imgName = argv[optind+1];
 }
 
+int CommandLineUI::thread_tracePixel(int numThread, int t) {
+	int width = m_nSize;
+	int height = (int)(width / raytracer->aspectRatio() + 0.5);
+
+	for( int j = 0; j < height; ++j ) {
+		if (j%numThread == t) {
+			for( int i = 0; i < width; ++i )
+				raytracer->tracePixel(i,j);
+		}
+	}
+
+}
+
 int CommandLineUI::run()
 {
 	assert( raytracer != 0 );
@@ -61,14 +76,28 @@ int CommandLineUI::run()
 
 		raytracer->traceSetup( width, height );
 
-		clock_t start, end;
-		start = clock();
+		chrono::time_point<std::chrono::system_clock> c_start, c_end;
+    	c_start = chrono::system_clock::now();
 
-		for( int j = 0; j < height; ++j )
-			for( int i = 0; i < width; ++i )
-				raytracer->tracePixel(i,j);
+    	// start multi thread
+		int numThread = thread::hardware_concurrency();
+		printf("num thread: %d\n", numThread);
+		thread myThreads[numThread];
 
-		end=clock();
+		for (int t=0;t<numThread;++t) {
+			myThreads[t] = thread(&CommandLineUI::thread_tracePixel, this, numThread, t);
+		}
+		for (int t=0;t<numThread;++t) {
+			myThreads[t].join();
+		}
+
+		// for( int j = 0; j < height; ++j )
+		// 	for( int i = 0; i < width; ++i )
+		// 		raytracer->tracePixel(i,j);
+
+		c_end = chrono::system_clock::now();
+		chrono::duration<double> t = c_end-c_start;
+		std::cout << "total time = " << t.count() << " seconds, rays traced = " << width*height << std::endl;
 
 		// save image
 		unsigned char* buf;
@@ -78,9 +107,6 @@ int CommandLineUI::run()
 		if (buf)
 			writeBMP(imgName, width, height, buf);
 
-		double t=(double)(end-start)/CLOCKS_PER_SEC;
-//		int totalRays = TraceUI::resetCount();
-		std::cout << "total time = " << t << " seconds, rays traced = " << width*height << std::endl;
         return 0;
 	}
 	else
@@ -101,3 +127,4 @@ void CommandLineUI::usage()
 	std::cerr << "  -r <#>      set recursion level (default " << m_nDepth << ")" << std::endl; 
 	std::cerr << "  -w <#>      set output image width (default " << m_nSize << ")" << std::endl;
 }
+

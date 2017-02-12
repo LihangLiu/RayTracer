@@ -28,6 +28,8 @@ public:
 
 	int run();
 
+	static int thread_tracePixel(GraphicalUI* pUI, int numThread, int t);
+
 	void alert( const string& msg );
 
 	// The FLTK widgets
@@ -44,6 +46,7 @@ public:
 	Fl_Slider*			m_treeDepthSlider;
 	Fl_Slider*			m_leafSizeSlider;
 	Fl_Slider*			m_filterSlider;
+	Fl_Slider*			m_threadNumSlider;
 
 	Fl_Check_Button*	m_debuggingDisplayCheckButton;
 	Fl_Check_Button*	m_aaCheckButton;
@@ -96,6 +99,8 @@ private:
 
 	static void cb_filterSlides(Fl_Widget* o, void* v);	// added by lihang liu
 	static void cb_cubeMapCheckButton(Fl_Widget* o, void* v);
+	
+	static void cb_threadNumSlides(Fl_Widget* o, void* v);	
 
 	static void cb_kdTreeCheckButton(Fl_Widget* o, void* v);
 
