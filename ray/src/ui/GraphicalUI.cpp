@@ -170,6 +170,8 @@ void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 	  }
 }
 
+static int numRunningThread = 0;	// used for updating UI
+
 void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 
 	pUI = (GraphicalUI*)(o->user_data());
@@ -191,11 +193,21 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 
         // start multi thread
         int numThread = pUI->m_nThreadNum;
+        numRunningThread = numThread;
 		printf("num thread: %d\n", numThread);
 		thread myThreads[numThread];
 
 		for (int t=0;t<numThread;++t) {
 			myThreads[t] = thread(&GraphicalUI::thread_tracePixel, pUI, numThread, t);
+		}
+		// update UI here
+		while (true) {
+			if (stopTrace || numRunningThread==0)
+				break;
+			std::this_thread::sleep_for (std::chrono::milliseconds(pUI->refreshInterval*100));
+			pUI->m_traceGlWindow->refresh();
+			Fl::check();
+			if (Fl::damage()) { Fl::flush(); }
 		}
 		for (int t=0;t<numThread;++t) {
 			myThreads[t].join();
@@ -224,36 +236,19 @@ int GraphicalUI::thread_tracePixel(GraphicalUI* pUI, int numThread, int t) {
 	// Save the window label
     const char *old_label = pUI->m_traceGlWindow->label();
 
-	// start timer
-	chrono::time_point<std::chrono::system_clock> start, end;
-	start = chrono::system_clock::now();
-	clock_t intervalMS = pUI->refreshInterval * 0.1;
 	for (int y = 0; y < height; y++)
 	{
 		if (y%numThread != t)
 			continue;
 	    for (int x = 0; x < width; x++)
 	    {
-	    	if (stopTrace) { printf("stop\n"); return 0; }
-			// check for input and refresh view every so often while tracing
-			end = chrono::system_clock::now();
-			chrono::duration<double> interval = end-start;
-			if (interval.count() >= intervalMS && t==0)
-			{
-			    start = end;
-			    sprintf(buffer, "(%d%%) %s", (int)((double)y / (double)height * 100.0), old_label);
-			    pUI->m_traceGlWindow->label(buffer);
-			    pUI->m_traceGlWindow->refresh();
-			    // Fl::check();
-			    // if (Fl::damage()) { Fl::flush(); }
-			}
-			// look for input and refresh window
+	    	if (stopTrace) { return 0; }
 			pUI->raytracer->tracePixel(x, y);
 			pUI->m_debuggingWindow->m_debuggingView->setDirty();
 	    }
-	    if (stopTrace) { printf("stop\n"); return 0; }
+	    if (stopTrace) { return 0; }
 	}
-
+	numRunningThread --;
 }
 
 void GraphicalUI::cb_stop(Fl_Widget* o, void* v)
