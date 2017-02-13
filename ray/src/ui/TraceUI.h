@@ -22,7 +22,8 @@ public:
 	TraceUI() : m_nDepth(0), m_nSize(512), m_displayDebuggingInfo(false),
                     m_shadows(true), m_smoothshade(true), raytracer(0),
                     m_nFilterWidth(1), m_usingCubeMap(0), m_usingKdTree(1),
-                    m_nThreadNum(std::thread::hardware_concurrency())
+                    m_nThreadNum(std::thread::hardware_concurrency()),
+                    m_nSuperSamplingNum(1)
                     {}
 
 	virtual int	run() = 0;
@@ -40,7 +41,8 @@ public:
 	// accessors:
 	int	getSize() const { return m_nSize; }
 	int	getDepth() const { return m_nDepth; }
-	int		getFilterWidth() const { return m_nFilterWidth; }
+	int	getFilterWidth() const { return m_nFilterWidth; }
+	int getSuperSamplingNum() const { return m_nSuperSamplingNum; }
 
 	bool	shadowSw() const { return m_shadows; }
 	bool	smShadSw() const { return m_smoothshade; }
@@ -64,6 +66,7 @@ protected:
 	int m_nFilterWidth;  // width of cubemap filter
 	bool m_usingKdTree;	// if using kd tree
 	int m_nThreadNum;	// thread number
+	int m_nSuperSamplingNum;	// the number of samples per pixel
 };
 
 #endif

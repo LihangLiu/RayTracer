@@ -26,6 +26,14 @@ using namespace std;
 // in TraceGLWindow, for example.
 bool debugMode = false;
 
+// used for super sampling
+float RandomFloat(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
 // Trace a top-level ray through pixel(i,j), i.e. normalized window coordinates (x,y),
 // through the projection plane, and out into the scene.  All we do is
 // enter the main ray-tracing method, getting things started by plugging
@@ -50,10 +58,23 @@ Vec3d RayTracer::tracePixel(int i, int j)
 
 	double x = double(i)/double(buffer_width);
 	double y = double(j)/double(buffer_height);
+	double d_x = 0.3/double(buffer_width);
+	double d_y = 0.3/double(buffer_height);
 
 	unsigned char *pixel = buffer + ( i + j * buffer_width ) * 3;
 
-	col = trace(x, y);
+	int sampNum = traceUI->getSuperSamplingNum();
+	if (sampNum == 1) {
+		col = trace(x,y);
+	} else {
+		double new_x, new_y;
+		for (int s=0;s<sampNum; ++s) {
+			new_x = RandomFloat(x-d_x,x+d_x);
+			new_y = RandomFloat(y-d_y,y+d_y);
+			col += trace(new_x, new_y);
+		}
+		col /= sampNum;
+	}
 
 	pixel[0] = (int)( 255.0 * col[0]);
 	pixel[1] = (int)( 255.0 * col[1]);

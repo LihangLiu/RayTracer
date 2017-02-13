@@ -154,6 +154,11 @@ void GraphicalUI::cb_threadNumSlides(Fl_Widget* o, void* v)
 	((GraphicalUI*)(o->user_data()))->m_nThreadNum=int( ((Fl_Slider *)o)->value() ) ;
 }
 
+void GraphicalUI::cb_superSamplingNumSlides(Fl_Widget* o, void* v)
+{
+	((GraphicalUI*)(o->user_data()))->m_nSuperSamplingNum=int( ((Fl_Slider *)o)->value() ) ;
+}
+
 void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 {
 	pUI=(GraphicalUI*)(o->user_data());
@@ -173,6 +178,7 @@ void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 static int numRunningThread = 0;	// used for updating UI
 
 void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
+	char buffer[256];
 
 	pUI = (GraphicalUI*)(o->user_data());
 	doneTrace = stopTrace = false;
@@ -204,7 +210,13 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 		while (true) {
 			if (stopTrace || numRunningThread==0)
 				break;
+			// sleep
 			std::this_thread::sleep_for (std::chrono::milliseconds(pUI->refreshInterval*100));
+			// refresh UI
+			c_end = chrono::system_clock::now();
+			chrono::duration<double> t = c_end-c_start;
+			sprintf(buffer, "(%.2f seconds) %s", t.count(), old_label);
+			pUI->m_traceGlWindow->label(buffer);
 			pUI->m_traceGlWindow->refresh();
 			Fl::check();
 			if (Fl::damage()) { Fl::flush(); }
@@ -228,8 +240,6 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 }
 
 int GraphicalUI::thread_tracePixel(GraphicalUI* pUI, int numThread, int t) {
-	char buffer[256];
-
 	int width = pUI->getSize();
 	int height = (int)(width / pUI->raytracer->aspectRatio() + 0.5);
 
@@ -384,7 +394,6 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_kdTreeCheckButton->value(m_usingKdTree);
 
 	// set up thread number slider
-	// install filter slider for cube map
 	m_threadNumSlider = new Fl_Value_Slider(10, 165, 180, 20, "Thread Number");
 	m_threadNumSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_threadNumSlider->type(FL_HOR_NICE_SLIDER);
@@ -396,6 +405,20 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_threadNumSlider->value(m_nThreadNum);
 	m_threadNumSlider->align(FL_ALIGN_RIGHT);
 	m_threadNumSlider->callback(cb_threadNumSlides);
+
+	// set up super sampling number slider
+	m_superSamplingNumSlider = new Fl_Value_Slider(10, 190, 180, 20, "Super Sapling Number");
+	m_superSamplingNumSlider->user_data((void*)(this));	// record self to be used by static callback functions
+	m_superSamplingNumSlider->type(FL_HOR_NICE_SLIDER);
+	m_superSamplingNumSlider->labelfont(FL_COURIER);
+	m_superSamplingNumSlider->labelsize(12);
+	m_superSamplingNumSlider->minimum(1);
+	m_superSamplingNumSlider->maximum(16);
+	m_superSamplingNumSlider->step(1);
+	m_superSamplingNumSlider->value(m_nSuperSamplingNum);
+	m_superSamplingNumSlider->align(FL_ALIGN_RIGHT);
+	m_superSamplingNumSlider->callback(cb_superSamplingNumSlides);
+
 
 
 	// set up debugging display checkbox
