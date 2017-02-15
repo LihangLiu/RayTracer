@@ -58,8 +58,8 @@ Vec3d RayTracer::tracePixel(int i, int j)
 
 	double x = double(i)/double(buffer_width);
 	double y = double(j)/double(buffer_height);
-	double d_x = 0.3/double(buffer_width);
-	double d_y = 0.3/double(buffer_height);
+	double d_x = 0.5/double(buffer_width);
+	double d_y = 0.5/double(buffer_height);
 
 	unsigned char *pixel = buffer + ( i + j * buffer_width ) * 3;
 
@@ -224,6 +224,20 @@ bool RayTracer::loadScene( char* fn ) {
 	return true;
 }
 
+// void RayTracer::traceSetup(int w, int h)
+// {
+// 	if (buffer_width != w || buffer_height != h)
+// 	{
+// 		buffer_width = w;
+// 		buffer_height = h;
+// 		bufferSize = buffer_width * buffer_height * 3;
+// 		delete[] buffer;
+// 		buffer = new unsigned char[bufferSize];
+// 	}
+// 	memset(buffer, 0, w*h*3);
+// 	m_bBufferReady = true;
+// }
+
 void RayTracer::traceSetup(int w, int h)
 {
 	if (buffer_width != w || buffer_height != h)
@@ -234,9 +248,8 @@ void RayTracer::traceSetup(int w, int h)
 		delete[] buffer;
 		buffer = new unsigned char[bufferSize];
 	}
-	memset(buffer, 0, w*h*3);
+	// memset(buffer, 0, w*h*3);
 	m_bBufferReady = true;
 }
-
 
 

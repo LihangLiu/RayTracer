@@ -12,7 +12,11 @@
     #define GetCurrentDir getcwd
 #endif
 
+int allSelected = 0;	// added for the bug in -O3
+
 CubeMapChooser::CubeMapChooser() {
+
+	allSelected = 0;
 
 	w = new Fl_Menu_Window(395, 355, "Load Cubemap");
 	w->user_data((void*)(this));
@@ -93,11 +97,12 @@ void CubeMapChooser::cb_cancel(Fl_Widget* o, void* v) {
 	ch->hide();
 }
 
+
 void CubeMapChooser::cb_ok(Fl_Widget* o, void* v) {
 	CubeMapChooser* ch = (CubeMapChooser*)(o->parent()->user_data());
 	int allGreen = 0;
 	while (ch->fb[allGreen]->selection_color() == FL_GREEN) allGreen++;
-	if (allGreen == 6) {
+	if (allGreen==6 || allSelected==6) {
 		CubeMap* cm = 0;
 		if (ch->caller->getRayTracer()->haveCubeMap()) {
 			cm = ch->caller->getRayTracer()->getCubeMap();
@@ -225,8 +230,12 @@ void CubeMapChooser::cb_ffb(Fl_Widget* o, int i) {
 		ch->fn[i] = fN;
 		ch->fi[i]->value(curPath);
 		ch->fb[i]->selection_color(FL_GREEN);
+		
+		allSelected ++;
+		// printf("selected %d\n", allSelected);
 	}
 	ch->fb[i]->value(0);
 	ch->fb[i]->value(1);
+
 }
 
