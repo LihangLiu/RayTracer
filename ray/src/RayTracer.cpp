@@ -45,7 +45,7 @@ Vec3d RayTracer::trace(double x, double y)
   if (TraceUI::m_debug) scene->intersectCache.clear();
   ray r(Vec3d(0,0,0), Vec3d(0,0,0), ray::VISIBILITY);
   scene->getCamera().rayThrough(x,y,r);
-  Vec3d ret = traceRay(r, traceUI->getDepth());
+  Vec3d ret = traceRay(r, traceUI->getDepth(), Vec3d(1,1,1));
   ret.clamp();
   return ret;
 }
@@ -86,7 +86,7 @@ Vec3d RayTracer::tracePixel(int i, int j)
 // Do recursive ray tracing!  You'll want to insert a lot of code here
 // (or places called from here) to handle reflection, refraction, etc etc.
 // depth: Max depth of recursion
-Vec3d RayTracer::traceRay(ray& r, int depth)
+Vec3d RayTracer::traceRay(ray& r, int depth, Vec3d last_factor)
 {
 	// check recursion depth
 	if (depth < 0)
@@ -117,8 +117,13 @@ Vec3d RayTracer::traceRay(ray& r, int depth)
 	  	Vec3d V = -r.d;
 		Vec3d R = 2*N*(N*V)-V;
 	  	if (!m.kr(i).iszero()) {
-	  		ray r_2nd(Q, R, ray::REFLECTION);
-	  		I += prod(m.kr(i), traceRay(r_2nd, depth-1));
+	  		Vec3d cur_factor = prod(m.kr(i), last_factor);
+	  		if (cur_factor.length() < traceUI->getTermThres()*0.001) {
+	  			
+	  		} else {
+		  		ray r_2nd(Q, R, ray::REFLECTION);
+		  		I += prod(m.kr(i), traceRay(r_2nd, depth-1, cur_factor));
+		  	}
 	  	}
 
 	  	// refraction model
@@ -136,9 +141,15 @@ Vec3d RayTracer::traceRay(ray& r, int depth)
 	  		Vec3d S_t = index*S_i;
 	  		// Check full reflection
 	  		if ((1.0-S_t*S_t) > 0) {
-	  			Vec3d T = S_t - N*sqrt(1.0-S_t*S_t);
-	  			ray r_2nd(Q,T,ray::REFRACTION);
-	  			I += prod(m.kt(i), traceRay(r_2nd, depth-1));		
+	  			Vec3d cur_factor = prod(m.kr(i), last_factor);
+		  		if (cur_factor.length() < traceUI->getTermThres()*0.001) {
+
+		  		} else {
+
+		  			Vec3d T = S_t - N*sqrt(1.0-S_t*S_t);
+		  			ray r_2nd(Q,T,ray::REFRACTION);
+		  			I += prod(m.kt(i), traceRay(r_2nd, depth-1, cur_factor));		
+		  		}
 	  		}
 	  	}
 

@@ -61,10 +61,20 @@ void Scene::buildKdTree() {
 	clock_t t = clock();
 	if (kdtree) 
 		delete kdtree;
+	// std::vector<Geometry*> newObjects;
+	// typedef vector<Geometry*>::const_iterator iter;
+	// for(iter j = objects.begin(); j != objects.end(); ++j) {
+	// 	Geometry* t = (*j);
+	// 	if (t->ifTrimesh())	
+	// 		newObjects.insert(newObjects.end(), t->getFaces().begin(), t->getFaces().end());
+	// 	else
+	// 		newObjects.push_back(t);
+	// }
 	kdtree = new KdTree<Geometry>(objects, 5);
 
 	t = clock() - t;
 	printf ("build tree: %f\n",t,((float)t)/CLOCKS_PER_SEC);
+	printf("with %d objects and depth: %d\n", objects.size(), kdtree->getDepth());
 }
 
 // Get any intersection with an object.  Return information about the 

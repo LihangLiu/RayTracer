@@ -23,7 +23,7 @@ public:
                     m_shadows(true), m_smoothshade(true), raytracer(0),
                     m_nFilterWidth(1), m_usingCubeMap(0), m_usingKdTree(1),
                     m_nThreadNum(std::thread::hardware_concurrency()),
-                    m_nSuperSamplingNum(1)
+                    m_nSuperSamplingNum(1), m_ntermThres(0)
                     {}
 
 	virtual int	run() = 0;
@@ -43,6 +43,7 @@ public:
 	int	getDepth() const { return m_nDepth; }
 	int	getFilterWidth() const { return m_nFilterWidth; }
 	int getSuperSamplingNum() const { return m_nSuperSamplingNum; }
+	int getTermThres() const { return m_ntermThres; }
 
 	bool	shadowSw() const { return m_shadows; }
 	bool	smShadSw() const { return m_smoothshade; }
@@ -67,6 +68,7 @@ protected:
 	bool m_usingKdTree;	// if using kd tree
 	int m_nThreadNum;	// thread number
 	int m_nSuperSamplingNum;	// the number of samples per pixel
+	int m_ntermThres;	// termination threshold *0.001
 };
 
 #endif

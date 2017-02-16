@@ -48,6 +48,7 @@ public:
 	Fl_Slider*			m_filterSlider;
 	Fl_Slider*			m_threadNumSlider;
 	Fl_Slider*			m_superSamplingNumSlider;
+	Fl_Slider*			m_termThresSlider;
 
 	Fl_Check_Button*	m_debuggingDisplayCheckButton;
 	Fl_Check_Button*	m_aaCheckButton;
@@ -104,6 +105,8 @@ private:
 	static void cb_threadNumSlides(Fl_Widget* o, void* v);	
 
 	static void cb_superSamplingNumSlides(Fl_Widget* o, void* v);	
+
+	static void cb_termThresSlides(Fl_Widget* o, void* v);	
 
 	static void cb_kdTreeCheckButton(Fl_Widget* o, void* v);
 

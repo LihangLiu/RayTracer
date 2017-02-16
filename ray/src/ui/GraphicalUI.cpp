@@ -159,6 +159,11 @@ void GraphicalUI::cb_superSamplingNumSlides(Fl_Widget* o, void* v)
 	((GraphicalUI*)(o->user_data()))->m_nSuperSamplingNum=int( ((Fl_Slider *)o)->value() ) ;
 }
 
+void GraphicalUI::cb_termThresSlides(Fl_Widget* o, void* v)
+{
+	((GraphicalUI*)(o->user_data()))->m_ntermThres=int( ((Fl_Slider *)o)->value() ) ;
+}
+
 void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 {
 	pUI=(GraphicalUI*)(o->user_data());
@@ -419,6 +424,19 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_superSamplingNumSlider->align(FL_ALIGN_RIGHT);
 	m_superSamplingNumSlider->callback(cb_superSamplingNumSlides);
 
+
+	// set up termination threshold slider
+	m_termThresSlider = new Fl_Value_Slider(10, 215, 180, 20, "Threshold (*0.001)");
+	m_termThresSlider->user_data((void*)(this));	// record self to be used by static callback functions
+	m_termThresSlider->type(FL_HOR_NICE_SLIDER);
+	m_termThresSlider->labelfont(FL_COURIER);
+	m_termThresSlider->labelsize(12);
+	m_termThresSlider->minimum(0);
+	m_termThresSlider->maximum(100);
+	m_termThresSlider->step(0);
+	m_termThresSlider->value(m_ntermThres);
+	m_termThresSlider->align(FL_ALIGN_RIGHT);
+	m_termThresSlider->callback(cb_termThresSlides);
 
 
 	// set up debugging display checkbox

@@ -46,21 +46,23 @@ struct BBoxComparator
 template <typename T> 
 struct TComparator 
 { 
-  	int axis;
-  	bool byMin;
-	TComparator(int index, bool by = true) {
-		axis = index;
-		byMin = by;
+  	int axis_;
+  	int by_;		// 0: min, 1: max, 2: center
+	TComparator(int index, int by = true) {
+		axis_ = index;
+		by_ = by;
 	}
 	bool operator()( const T* lx, const T* rx) const {
     	Vec3d minPoint1 = lx->getBoundingBox().getMin();
     	Vec3d minPoint2 = rx->getBoundingBox().getMin();
     	Vec3d maxPoint1 = lx->getBoundingBox().getMax();
     	Vec3d maxPoint2 = rx->getBoundingBox().getMax();
-    	if (byMin) {
-    		return minPoint1[axis] < minPoint2[axis];
+    	if (by_ == 0) {
+    		return minPoint1[axis_] < minPoint2[axis_];
+    	} else if (by_ == 1) {
+    		return maxPoint1[axis_] < maxPoint2[axis_]; 
     	} else {
-    		return maxPoint1[axis] < maxPoint2[axis]; 
+    		return (minPoint1[axis_]+maxPoint1[axis_]) < (minPoint2[axis_]+maxPoint2[axis_]);
     	}
     }
 }; 
@@ -91,6 +93,7 @@ public:
   	bool intersect(ray& r, isect& i) const;
   	bool intersectLocal(ray& r, isect& i) const;
   	void print() const;
+  	int getDepth() const;
   	void printObjects(ObjVec objs, int axis);
   	const BoundingBox& bounds() const { return treeBounds; }
 
@@ -99,6 +102,7 @@ private:
 	KdTree<T>* rightChild;
   	ObjVec objects;
   	BoundingBox treeBounds;
+  	int splitAxis;
 
   	int maxObjNum;
 
@@ -185,6 +189,13 @@ inline bool KdTree<T>::intersectLocal(ray& r, isect& i) const {
 }
 
 template<class T>
+int KdTree<T>::getDepth() const{
+	if (!leftChild)
+		return 1;
+	return 1+max(leftChild->getDepth(), rightChild->getDepth());
+}
+
+template<class T>
 void KdTree<T>::print() const{
 	cout << "objects size " << objects.size() <<endl;
 }
@@ -217,32 +228,24 @@ void KdTree<T>::splitByAF() {
 	int minI = 0;
 	double minAF = 1.0e308;
 	int minAxis = 0;
-	bool minBy = true;
+	int minBy = 0;
 	// evaluate minI, minAxis and minF over all axises.
-	for (int axis=0;axis<3;++axis) {
-		double cAF;
-		int cI;
-		std::sort(objects.begin(), objects.end(),TComparator<T>(axis, true));
-		getMinAF(objects, cAF, cI);
-		if (cAF < minAF) {
-			minAF = cAF;
-			minI = cI;
-			minAxis = axis;
-			minBy = true;
+	for (int by=0; by<2;++by) {
+		for (int axis=0;axis<3;++axis) {
+			double cAF;
+			int cI;
+			std::sort(objects.begin(), objects.end(),TComparator<T>(axis, by));
+			getMinAF(objects, cAF, cI);
+			if (cAF < minAF) {
+				minAF = cAF;
+				minI = cI;
+				minAxis = axis;
+				minBy = by;
+			}
 		}
 	}
-	for (int axis=0;axis<3;++axis) {
-		double cAF;
-		int cI;
-		std::sort(objects.begin(), objects.end(),TComparator<T>(axis, false));
-		getMinAF(objects, cAF, cI);
-		if (cAF < minAF) {
-			minAF = cAF;
-			minI = cI;
-			minAxis = axis;
-			minBy = false;
-		}
-	}
+	
+	splitAxis = minAxis;
 	// pass objects to leftObj and rightObj by minI and minAxis
 	ObjVec leftObjs;
 	ObjVec rightObjs;
@@ -257,8 +260,10 @@ void KdTree<T>::splitByAF() {
 	// construct child tree
 	// cout << "split by " <<minAxis<<" of "<<minI<<"\n";
 	// cout << "	left " ;
+	// cout << leftObjs.size() <<endl;
 	// printObjects(leftObjs, minAxis);
 	// cout << "	right " ;
+	// cout << rightObjs.size() <<endl;
 	// printObjects(rightObjs, minAxis);
 	leftChild = new KdTree(leftObjs, maxObjNum);
 	rightChild = new KdTree(rightObjs, maxObjNum);
@@ -289,7 +294,7 @@ void KdTree<T>::getMinAF(const ObjVec sorted_objs, double& minAF, int& minI) {
 		int nA = i+1;
 		double sB = sB_list[n-2-i];
 		int nB = n-i-1;
-		double f = sA*nA+sB*nB;
+		double f = (sA*nA+sB*nB);
 		if (f<minAF) {
 			minAF = f;
 			minI = i;
