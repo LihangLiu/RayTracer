@@ -73,6 +73,14 @@ Vec3d PointLight::shadowAttenuation(const ray& r, const Vec3d& p) const
       // check the intersection if before or after the light
       Vec3d q = r_2nd.at(i.t);
       if ((position-p).length()>(q-p).length()) {
+        // // soft shadows
+        // ray r_3(q, getDirection(p), ray::REFLECTION);     // 
+        // isect i_3;
+        // if (scene->intersect(r_3, i_3)) {
+        //   double factor = max(0.0, 1-i_3.t);
+        //   return factor*Vec3d(1,1,1);
+        // }
+        // standard shadows
         Vec3d kt = i.material->kt(i);
         return kt;
       }
@@ -80,4 +88,5 @@ Vec3d PointLight::shadowAttenuation(const ray& r, const Vec3d& p) const
 
   return Vec3d(1,1,1);
 }
+
 

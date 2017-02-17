@@ -181,13 +181,14 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
 
     Vec3d Q = r.at(t);
 
+    // alpha, beta, gamma need to be switched here
     // check whether Q is in abc
-    double alpha = n*((B-A)^(Q-A));
-    if (alpha<0) return false;
-    double beta =  n*((C-B)^(Q-B));
-    if (beta<0) return false;
-    double gamma = n*((A-C)^(Q-C)); 
+    double gamma = n*((B-A)^(Q-A));
     if (gamma<0) return false;
+    double alpha =  n*((C-B)^(Q-B));
+    if (alpha<0) return false;
+    double beta = n*((A-C)^(Q-C)); 
+    if (beta<0) return false;
 
     double deno = alpha+beta+gamma;
     alpha /= deno;
@@ -200,6 +201,16 @@ bool TrimeshFace::intersectLocal(ray& r, isect& i) const
     i.setObject(this);
     i.setMaterial(*material);
     i.setBary(alpha, beta, gamma);
+    i.setUVCoordinates(Vec2d(alpha, beta));
+
+    // smooth shader
+    if (parent->normals.size()>0) {
+        const Vec3d& NA = parent->normals[ids[0]];
+        const Vec3d& NB = parent->normals[ids[1]];
+        const Vec3d& NC = parent->normals[ids[2]];
+        i.N = alpha*NA + beta*NB + gamma*NC;
+        i.N.normalize();
+    }
 
     return true;
 }

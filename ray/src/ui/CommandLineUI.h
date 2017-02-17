@@ -7,7 +7,11 @@
 #ifndef __CommandLineUI_h__
 #define __CommandLineUI_h__
 
+
 #include "TraceUI.h"
+
+
+using namespace std;
 
 // ***********************************************************
 // from getopt.cpp
@@ -32,6 +36,8 @@ public:
 
 private:
 	void		usage();
+
+	int 	cur_coordinate;
 
 	char*	rayName;
 	char*	imgName;

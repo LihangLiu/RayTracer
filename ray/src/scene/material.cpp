@@ -113,6 +113,11 @@ Vec3d TextureMap::getMappedValue( const Vec2d& coord ) const
   // [0, 1] x [0, 1] in 2-space to bitmap coordinates,
   // and use these to perform bilinear interpolation
   // of the values.
+  double u = coord[0];
+  double v = coord[1];
+  int x = (int)(u*width);
+  int y = (int)(v*height);
+  return getPixelAt(x,y);
 
   return Vec3d(1,1,1);
 
@@ -156,5 +161,6 @@ double MaterialParameter::intensityValue( const isect& is ) const
     else
         return (0.299 * _value[0]) + (0.587 * _value[1]) + (0.114 * _value[2]);
 }
+
 
 

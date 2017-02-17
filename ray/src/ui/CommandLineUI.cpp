@@ -55,11 +55,20 @@ int CommandLineUI::thread_tracePixel(int numThread, int t) {
 	int width = m_nSize;
 	int height = (int)(width / raytracer->aspectRatio() + 0.5);
 
-	for( int j = 0; j < height; ++j ) {
-		if (j%numThread == t) {
-			for( int i = 0; i < width; ++i )
-				raytracer->tracePixel(i,j);
-		}
+	// for( int j = 0; j < height; ++j ) {
+	// 	if (j%numThread == t) {
+	// 		for( int i = 0; i < width; ++i )
+	// 			raytracer->tracePixel(i,j);
+	// 	}
+	// }
+	while (true) {
+		int t_coord = (cur_coordinate++);
+
+		int t_width = t_coord % width;
+		int t_height = t_coord/width;
+		if (t_height >= height) 
+			break;
+		raytracer->tracePixel(t_width,t_height);
 	}
 
 }
@@ -84,6 +93,10 @@ int CommandLineUI::run()
 		printf("num thread: %d\n", numThread);
 		thread myThreads[numThread];
 
+		// init cur_coordinate
+		cur_coordinate = 0;
+
+		// thread running
 		for (int t=0;t<numThread;++t) {
 			myThreads[t] = thread(&CommandLineUI::thread_tracePixel, this, numThread, t);
 		}

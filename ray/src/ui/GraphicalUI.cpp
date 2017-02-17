@@ -181,6 +181,7 @@ void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 }
 
 static int numRunningThread = 0;	// used for updating UI
+static int cur_coordinate = 0;
 
 void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 	char buffer[256];
@@ -207,6 +208,9 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
         numRunningThread = numThread;
 		printf("num thread: %d\n", numThread);
 		thread myThreads[numThread];
+
+		// init cur_coordinate
+		cur_coordinate = 0;
 
 		for (int t=0;t<numThread;++t) {
 			myThreads[t] = thread(&GraphicalUI::thread_tracePixel, pUI, numThread, t);
@@ -248,9 +252,6 @@ int GraphicalUI::thread_tracePixel(GraphicalUI* pUI, int numThread, int t) {
 	int width = pUI->getSize();
 	int height = (int)(width / pUI->raytracer->aspectRatio() + 0.5);
 
-	// Save the window label
-    const char *old_label = pUI->m_traceGlWindow->label();
-
 	for (int y = 0; y < height; y++)
 	{
 		if (y%numThread != t)
@@ -259,10 +260,21 @@ int GraphicalUI::thread_tracePixel(GraphicalUI* pUI, int numThread, int t) {
 	    {
 	    	if (stopTrace) { return 0; }
 			pUI->raytracer->tracePixel(x, y);
-			pUI->m_debuggingWindow->m_debuggingView->setDirty();
+			// pUI->m_debuggingWindow->m_debuggingView->setDirty();
 	    }
 	    if (stopTrace) { return 0; }
 	}
+
+	// while (true) {
+	// 	int t_coord = (cur_coordinate++);
+
+	// 	int t_width = t_coord % width;
+	// 	int t_height = t_coord/width;
+	// 	if (t_height >= height) 
+	// 		break;
+	// 	pUI->raytracer->tracePixel(t_width,t_height);
+	// }
+
 	numRunningThread --;
 }
 
